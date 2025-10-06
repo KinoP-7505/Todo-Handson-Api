@@ -1,0 +1,10 @@
+package jp.co.eaz.todo_handson_api.dto;
+
+import lombok.Data;
+
+@Data
+public class TodoRequest {
+    
+    private Todo todo;
+
+}

@@ -1,0 +1,14 @@
+package jp.co.eaz.todo_handson_api.dto;
+
+import lombok.Data;
+
+/**
+ * 認証レスポンスクラス
+ */
+@Data
+public class AuthResponse {
+    
+    private String jwtToken;
+    private Integer expiresIn;
+
+}
