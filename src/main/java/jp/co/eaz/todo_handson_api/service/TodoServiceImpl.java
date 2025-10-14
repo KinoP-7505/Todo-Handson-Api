@@ -2,30 +2,20 @@ package jp.co.eaz.todo_handson_api.service;
 
 import java.sql.Timestamp;
 import java.util.List;
-import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import jp.co.eaz.todo_handson_api.dto.Todo;
 import jp.co.eaz.todo_handson_api.model.TodoEntity;
-import jp.co.eaz.todo_handson_api.model.UserEntity;
 import jp.co.eaz.todo_handson_api.repository.TodoRepository;
+import jp.co.eaz.todo_handson_api.repository.TodoSpecification;
 import jp.co.eaz.todo_handson_api.repository.UserRepository;
 
 @Service
 public class TodoServiceImpl implements TodoService {
-
-//    // Todoリスト
-//    private List<Todo> todoList;
-//
-//    // 初期TodoList作成
-//    public TodoServiceImpl() {
-//        todoList = new ArrayList<Todo>();
-//        Todo sample = new Todo(1, "sample todo");
-//        todoList.add(sample);
-//    }
 
     @Autowired
     private TodoRepository todoRepository;
@@ -33,21 +23,35 @@ public class TodoServiceImpl implements TodoService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private UserService userService;
+
     @Override
     public List<TodoEntity> getTodoList() {
-        // todoを全件返す
-        return todoRepository.findAll(Sort.by(Sort.Direction.ASC, "todoId"));
+        // ログインユーザのIDはuserSeviceから取得可能
+        Integer userId = userService.getUserId();
+
+        // ユーザIDはある前提
+        // 抽出条件の構築
+        List<TodoEntity> list;
+        Specification<TodoEntity> spec = TodoSpecification.hasUserId(userId)
+                .and(TodoSpecification.conditionalCompleteAt(false));
+        // ソート条件
+        Sort sort = Sort.by(Sort.Direction.ASC, "todoId");
+        // JPAクエリ実行（条件、ソートを入力）
+        list = todoRepository.findAll(spec, sort);
+
+        return list;
     }
 
     @Override
     public void addTodo(Todo todo) {
-        // User
-        UserEntity user = userRepository.findById(1).get();
+        // ログインユーザのIDはuserSeviceから取得可能
+        Integer userId = userService.getUserId();
 
-//        Todo addTodo = new Todo(todo.getTodoText(), user.get());
         TodoEntity addTodo = new TodoEntity();
         addTodo.setTodoText(todo.getTodoText());
-        addTodo.setUserId(user.getUserId());
+        addTodo.setUserId(userId);
         addTodo.setCreatedAt(getCurrentDate());
 
         todoRepository.save(addTodo);
@@ -57,7 +61,7 @@ public class TodoServiceImpl implements TodoService {
     public void updateTodo(Todo todo) {
         // todoIdに紐づくレコードを取得
         TodoEntity entity = todoRepository.findById(todo.getTodoId()).get();
-        
+
         entity.setTodoText(todo.getTodoText());
         entity.setUpdatedAt(getCurrentDate());
         // 更新
@@ -65,21 +69,20 @@ public class TodoServiceImpl implements TodoService {
     }
 
     @Override
-    public void updateCompleteAt(Todo todo) {
-        // todoIdに紐づくレコードを取得
-        TodoEntity entity = todoRepository.findById(todo.getTodoId()).get();
+    public void completeTodoList(Integer[] ids) {
+        Timestamp currentDate = getCurrentDate();
+        // ログインユーザのIDはuserSeviceから取得可能
+        Integer userId = userService.getUserId();
 
-        // 完了日がNullの場合
-        if (Objects.isNull(entity.getCompleateAt())) {
+        // idsから１つづつ処理
+        for (Integer todoId : ids) {
+            // idに紐づくレコードを取得
+            TodoEntity entity = todoRepository.findByTodoIdAndUserId(todoId, userId);
             // レコードの完了日を更新
-            entity.setCompleateAt(getCurrentDate());
-        } else {
-            // 上記以外は完了日をnull更新
-            entity.setCompleateAt(null);
+            entity.setCompleateAt(currentDate);
+            // 更新
+            todoRepository.save(entity);
         }
-        // 更新
-        todoRepository.save(entity);
-
     }
 
     // Timestamp型の現在日時を返却
@@ -88,22 +91,10 @@ public class TodoServiceImpl implements TodoService {
         return new Timestamp(currentTimeMillis);
     }
 
-//    @Override
-//    public String updateTodo(Todo todo) {
-//        // TODO 自動生成されたメソッド・スタブ
-//        return "success";
-//    }
-//
-//    @Override
-//    public String completeTodo(Long id) {
-//        // TODO 自動生成されたメソッド・スタブ
-//        return "success";
-//    }
-//
-//    @Override
-//    public String unCompleteTodo(Long id) {
-//        // TODO 自動生成されたメソッド・スタブ
-//        return "success";
-//    }
+    @Override
+    public void updateCompleteAt(Todo todo) {
+        // TODO 自動生成されたメソッド・スタブ
+
+    }
 
 }

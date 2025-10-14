@@ -30,9 +30,9 @@ public interface TodoService {
     public void updateCompleteAt(Todo todo);
 
     /**
-     * Todoを完了
+     * todoIdに紐づくTodoを完了に設定
      */
-//    public String completeTodo(Long id);
+    public void completeTodoList(Integer[] ids);
 
     /**
      * Todoを完了から未完了に変更

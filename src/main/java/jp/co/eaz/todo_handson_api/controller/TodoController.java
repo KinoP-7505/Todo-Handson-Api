@@ -22,7 +22,9 @@ import jp.co.eaz.todo_handson_api.dto.AuthResponse;
 import jp.co.eaz.todo_handson_api.dto.GetTodoListResponse;
 import jp.co.eaz.todo_handson_api.dto.LoginRequest;
 import jp.co.eaz.todo_handson_api.dto.TodoRequest;
+import jp.co.eaz.todo_handson_api.model.UserEntity;
 import jp.co.eaz.todo_handson_api.service.TodoService;
+import jp.co.eaz.todo_handson_api.service.UserService;
 
 @RestController
 @CrossOrigin(origins = "http://localhost:5173", methods = { RequestMethod.GET, RequestMethod.POST,
@@ -31,12 +33,16 @@ public class TodoController {
 
     @Autowired
     private TodoService todoService;
+    
+    @Autowired
+    private UserService userService;
 
     @Autowired
     private AuthenticationManager authenticationManager;
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
+    
 
     private final String BRANK = "";
 
@@ -70,7 +76,6 @@ public class TodoController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "ユーザーが存在しません");
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "認証中にエラーが発生しました");
-
         }
 
         // 2. 認証に成功したら、ユーザーの詳細をロード
@@ -82,12 +87,15 @@ public class TodoController {
 
         } else {
             throw new RuntimeException("ログイン失敗");
-
         }
 
         AuthResponse res = new AuthResponse();
         res.setJwtToken(token);
         res.setExpiresIn(30000);
+        // ユーザ情報をセット（認証済みなので必ず取得する）
+        UserEntity user = userService.getUserByUserName(loginRequest.getUserName());
+        res.setUserId(user.getUserId());
+        res.setUserViewName(user.getViewName());
 
         // 4. トークンをクライアントに返す
         return ResponseEntity.ok(res);
@@ -139,13 +147,24 @@ public class TodoController {
         res.setExchangeTodoList(todoService.getTodoList());
         return res;
     }
+    
+    @PreAuthorize("hasRole('USER')") 
+    @PostMapping("/sendCompleteList")
+    public ResponseEntity<GetTodoListResponse> sendCompleteList(@RequestBody TodoRequest reqTodo) {
+        // 完了日更新
+        todoService.completeTodoList(reqTodo.getTodoIdList());
+
+        GetTodoListResponse res = new GetTodoListResponse();
+        return ResponseEntity.ok(res);
+    }
+
 
     @PostMapping("/updateCompleteAt")
     public GetTodoListResponse updateCompleteAt(@RequestBody TodoRequest reqTodo) {
+
         todoService.updateCompleteAt(reqTodo.getTodo());
         // 更新したリストを返却
         GetTodoListResponse res = new GetTodoListResponse();
-        res.setExchangeTodoList(todoService.getTodoList());
         return res;
     }
 

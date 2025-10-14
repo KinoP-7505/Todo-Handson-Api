@@ -6,5 +6,6 @@ import lombok.Data;
 public class TodoRequest {
     
     private Todo todo;
+    private Integer[] todoIdList;
 
 }

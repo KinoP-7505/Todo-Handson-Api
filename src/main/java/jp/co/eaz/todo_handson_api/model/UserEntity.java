@@ -33,6 +33,9 @@ public class UserEntity {
     @Column(name = "password", nullable = false)
     private String password;
 
+    @Column(name = "view_name")
+    private String viewName;
+
     @CreatedDate // システムDATE自動セット
     @Column(name = "created_at")
     private Timestamp createdAt;

@@ -10,5 +10,7 @@ public class AuthResponse {
     
     private String jwtToken;
     private Integer expiresIn;
+    private String userViewName; // 表示ユーザ名
+    private Integer userId;
 
 }
