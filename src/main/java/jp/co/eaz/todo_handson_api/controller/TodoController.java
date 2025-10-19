@@ -101,7 +101,7 @@ public class TodoController {
         return ResponseEntity.ok(res);
     }
 
-    // Todoリスト取得API
+    // Todoリスト取得API（未完了）
     @PreAuthorize("hasRole('USER')") 
     @GetMapping("/getTodoList")
     public ResponseEntity<GetTodoListResponse> getTodoList() throws Exception {
@@ -109,7 +109,26 @@ public class TodoController {
         System.out.println("TodoController getTodoList()");
 
         try {
-            res.setExchangeTodoList(todoService.getTodoList());
+            res.setExchangeTodoList(todoService.getTodoList("now"));
+        } catch (Exception e) {
+            // 例外
+            System.out.println(e);
+            res.setMessage("getTodoList エラー");
+            return ResponseEntity.badRequest().body(res);
+        }
+        return ResponseEntity.ok(res);
+
+    }
+
+    // Todoリスト取得API（未完了）
+    @PreAuthorize("hasRole('USER')") 
+    @GetMapping("/getTodoListComp")
+    public ResponseEntity<GetTodoListResponse> getTodoListComp() throws Exception {
+        GetTodoListResponse res = new GetTodoListResponse();
+        System.out.println("TodoController getTodoList()");
+
+        try {
+            res.setExchangeTodoList(todoService.getTodoList("comp"));
         } catch (Exception e) {
             // 例外
             System.out.println(e);
@@ -129,36 +148,26 @@ public class TodoController {
 
         // todo登録
         todoService.addTodo(todoReq.getTodo());
-        // 登録したリストを返却
-//        GetTodoListResponse res = new GetTodoListResponse();
-//        res.setExchangeTodoList(todoService.getTodoList());
-        
     }
 
     // Todoリスト更新API
     @PreAuthorize("hasRole('USER')") 
     @PostMapping("/updateTodo")
-    public GetTodoListResponse updateTodo(@RequestBody TodoRequest reqTodo) {
+    public void updateTodo(@RequestBody TodoRequest reqTodo) {
         // todo更新
         todoService.updateTodo(reqTodo.getTodo());
 
-        // 更新したリストを返却
-        GetTodoListResponse res = new GetTodoListResponse();
-        res.setExchangeTodoList(todoService.getTodoList());
-        return res;
     }
     
     @PreAuthorize("hasRole('USER')") 
     @PostMapping("/sendCompleteList")
-    public ResponseEntity<GetTodoListResponse> sendCompleteList(@RequestBody TodoRequest reqTodo) {
+    public void sendCompleteList(@RequestBody TodoRequest reqTodo) {
         // 完了日更新
-        todoService.completeTodoList(reqTodo.getTodoIdList());
+        todoService.completeTodoList(reqTodo.getOperation(),reqTodo.getTodoIdList());
 
-        GetTodoListResponse res = new GetTodoListResponse();
-        return ResponseEntity.ok(res);
     }
 
-
+    @PreAuthorize("hasRole('USER')") 
     @PostMapping("/updateCompleteAt")
     public GetTodoListResponse updateCompleteAt(@RequestBody TodoRequest reqTodo) {
 
@@ -169,6 +178,14 @@ public class TodoController {
     }
 
     // Todoリスト削除API
-//    @PostMapping("deleteTodo")
+    @PreAuthorize("hasRole('USER')") 
+    @PostMapping("/deleteTodo")
+    public GetTodoListResponse deleteTodo(@RequestBody TodoRequest reqTodo) {
+
+        todoService.deleteTodo(reqTodo.getTodo());
+        // 更新したリストを返却
+        GetTodoListResponse res = new GetTodoListResponse();
+        return res;
+    }
 
 }

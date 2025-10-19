@@ -27,15 +27,16 @@ public class TodoServiceImpl implements TodoService {
     private UserService userService;
 
     @Override
-    public List<TodoEntity> getTodoList() {
+    public List<TodoEntity> getTodoList(String operation) {
         // ログインユーザのIDはuserSeviceから取得可能
         Integer userId = userService.getUserId();
 
         // ユーザIDはある前提
         // 抽出条件の構築
         List<TodoEntity> list;
+        // 完了日時あり＝comp、なし=now
         Specification<TodoEntity> spec = TodoSpecification.hasUserId(userId)
-                .and(TodoSpecification.conditionalCompleteAt(false));
+                .and(TodoSpecification.conditionalCompleteAt(operation == "comp"));
         // ソート条件
         Sort sort = Sort.by(Sort.Direction.ASC, "todoId");
         // JPAクエリ実行（条件、ソートを入力）
@@ -69,7 +70,7 @@ public class TodoServiceImpl implements TodoService {
     }
 
     @Override
-    public void completeTodoList(Integer[] ids) {
+    public void completeTodoList(String operation, Integer[] ids) {
         Timestamp currentDate = getCurrentDate();
         // ログインユーザのIDはuserSeviceから取得可能
         Integer userId = userService.getUserId();
@@ -78,8 +79,19 @@ public class TodoServiceImpl implements TodoService {
         for (Integer todoId : ids) {
             // idに紐づくレコードを取得
             TodoEntity entity = todoRepository.findByTodoIdAndUserId(todoId, userId);
-            // レコードの完了日を更新
-            entity.setCompleateAt(currentDate);
+
+            // モダンSwitc文
+            switch (operation) {
+            case "set" -> {
+                // レコードの完了日を更新
+                entity.setCompleateAt(currentDate);
+            }
+            case "remove" -> {
+                // レコードの完了日クリアに更新
+                entity.setCompleateAt(null);
+            }
+            default -> throw new IllegalArgumentException("Unexpected value: " + operation);
+            }
             // 更新
             todoRepository.save(entity);
         }
@@ -95,6 +107,15 @@ public class TodoServiceImpl implements TodoService {
     public void updateCompleteAt(Todo todo) {
         // TODO 自動生成されたメソッド・スタブ
 
+    }
+
+    @Override
+    public void deleteTodo(Todo todo) {
+        Integer userId = userService.getUserId();
+        
+        
+     // TODO 削除処理を作成
+        
     }
 
 }
