@@ -3,6 +3,8 @@ package jp.co.eaz.todo_handson_api.service;
 import java.sql.Timestamp;
 import java.util.List;
 
+import jakarta.transaction.Transactional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -12,7 +14,6 @@ import jp.co.eaz.todo_handson_api.dto.Todo;
 import jp.co.eaz.todo_handson_api.model.TodoEntity;
 import jp.co.eaz.todo_handson_api.repository.TodoRepository;
 import jp.co.eaz.todo_handson_api.repository.TodoSpecification;
-import jp.co.eaz.todo_handson_api.repository.UserRepository;
 
 @Service
 public class TodoServiceImpl implements TodoService {
@@ -20,8 +21,8 @@ public class TodoServiceImpl implements TodoService {
     @Autowired
     private TodoRepository todoRepository;
 
-    @Autowired
-    private UserRepository userRepository;
+//    @Autowired
+//    private UserRepository userRepository;
 
     @Autowired
     private UserService userService;
@@ -109,13 +110,11 @@ public class TodoServiceImpl implements TodoService {
 
     }
 
+    @Transactional
     @Override
     public void deleteTodo(Todo todo) {
-        Integer userId = userService.getUserId();
-        
-        
-     // TODO 削除処理を作成
-        
+        // toodIdに紐づくレコード削除
+        todoRepository.deleteById(todo.getTodoId());
     }
 
 }
