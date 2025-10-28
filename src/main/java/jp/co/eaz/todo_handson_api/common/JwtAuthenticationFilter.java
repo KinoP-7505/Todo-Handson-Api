@@ -17,6 +17,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import io.jsonwebtoken.ExpiredJwtException;
+
 /**
  * JWTヘッダーを検証するための認証フィルター
  */
@@ -25,7 +27,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
-    
+
     @Autowired
     private UserDetailsService userDetailsService;
 
@@ -35,31 +37,36 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 //    }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, 
-            HttpServletResponse response, 
+    protected void doFilterInternal(HttpServletRequest request,
+            HttpServletResponse response,
             FilterChain filterChain)
             throws ServletException, IOException {
-        
         try {
-          String jwt = getJwtFromRequest(request);
-          
-          if (StringUtils.hasText(jwt) && jwtTokenProvider.validateToken(jwt) ) {
-              // JWTユーザ名を取得
-              String userName = jwtTokenProvider.getUsernameFromToken(jwt);
-              UserDetails userDetails = userDetailsService.loadUserByUsername(userName);
-              
-              // リクエスト認証
-              UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                      userDetails, 
-                      null, 
-                      userDetails.getAuthorities()
-              );
-              auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-              
-              SecurityContextHolder.getContext().setAuthentication(auth);
-          }
+            String jwt = getJwtFromRequest(request);
+
+            // JWTトークンが有効な場合
+            if (StringUtils.hasText(jwt) && jwtTokenProvider.validateToken(jwt)) {
+                // JWTユーザ名を取得
+                String userName = jwtTokenProvider.getUsernameFromToken(jwt);
+                UserDetails userDetails = userDetailsService.loadUserByUsername(userName);
+
+                // リクエスト認証
+                UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                        userDetails,
+                        null,
+                        userDetails.getAuthorities());
+                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                SecurityContextHolder.getContext().setAuthentication(auth);
+            }
+        } catch (ExpiredJwtException e) {
+            // JWT有効期限切れの場合、リクエストに例外を設定
+            request.setAttribute("exception", e);
+            SecurityContextHolder.clearContext();
         } catch (Exception e) {
-         // 認証失敗
+            // その他の認証失敗
+            request.setAttribute("exception", e);
+            SecurityContextHolder.clearContext();
         }
         filterChain.doFilter(request, response);
     }

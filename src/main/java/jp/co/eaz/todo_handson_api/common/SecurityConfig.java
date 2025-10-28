@@ -1,5 +1,6 @@
 package jp.co.eaz.todo_handson_api.common;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -18,6 +19,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    @Autowired
+    private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
     private final JwtAuthenticationFilter jwtAuthFilter;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
@@ -25,7 +29,8 @@ public class SecurityConfig {
     }
 
     /**
-     * AuthenticationManagerをBeanとして公開する このメソッドを追加することで、AuthenticationManagerがDI可能になる
+     * AuthenticationManagerをBeanとして公開する。
+     * このメソッドを追加することで、AuthenticationManagerがDI可能になる
      */
     @Bean
     AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
@@ -35,7 +40,6 @@ public class SecurityConfig {
     }
 
     // アクセス修飾子なし
-    // TODO:CORS対策
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
@@ -46,15 +50,16 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 // 2. 認証リクエストの設定 (新しいラムダ形式)
                 .authorizeHttpRequests(auth -> auth
-                        //（プリフライトリクエスト（PPTIONS））認証不要
+                        // （プリフライトリクエスト（PPTIONS））認証不要
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // （ログイン）認証不要
                         .requestMatchers("/login").permitAll()
                         // それ以外のリクエストは要認証
-                        .anyRequest().authenticated()
-                        )
+                        .anyRequest().authenticated())
                 // セッションをSTATELESSに設定
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // 認証エラー時のエントリーポイント
+                .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
                 // JWT認証フィルターを追加
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
