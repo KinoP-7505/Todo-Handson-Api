@@ -3,7 +3,7 @@ package jp.co.eaz.todo_handson_api.dto;
 import lombok.Data;
 
 /**
- * 認証レスポンスクラス
+ * 認証レスポンスDTO
  */
 @Data
 public class AuthResponse {
@@ -12,5 +12,4 @@ public class AuthResponse {
     private Integer expiresIn;
     private String userViewName; // 表示ユーザ名
     private Integer userId;
-
 }

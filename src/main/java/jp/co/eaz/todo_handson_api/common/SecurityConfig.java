@@ -56,7 +56,7 @@ public class SecurityConfig {
                         .requestMatchers("/login").permitAll()
                         // それ以外のリクエストは要認証
                         .anyRequest().authenticated())
-                // セッションをSTATELESSに設定
+                // セッションをSTATELESSに設定（JWT認証はセッションをサーバで保持しない）
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // 認証エラー時のエントリーポイント
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))

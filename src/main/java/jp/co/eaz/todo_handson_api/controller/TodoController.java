@@ -1,5 +1,10 @@
 package jp.co.eaz.todo_handson_api.controller;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import jakarta.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -9,16 +14,17 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 import jp.co.eaz.todo_handson_api.common.JwtTokenProvider;
 import jp.co.eaz.todo_handson_api.dto.AuthResponse;
+import jp.co.eaz.todo_handson_api.dto.ErrorResponse;
 import jp.co.eaz.todo_handson_api.dto.GetTodoListResponse;
 import jp.co.eaz.todo_handson_api.dto.LoginRequest;
 import jp.co.eaz.todo_handson_api.dto.TodoRequest;
@@ -33,7 +39,7 @@ public class TodoController {
 
     @Autowired
     private TodoService todoService;
-    
+
     @Autowired
     private UserService userService;
 
@@ -42,7 +48,6 @@ public class TodoController {
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
-    
 
     private final String BRANK = "";
 
@@ -53,15 +58,20 @@ public class TodoController {
      * @return JWTトークン
      */
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> authenticateUser(@RequestBody LoginRequest loginRequest) {
-        System.out.println(loginRequest);
+    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest, BindingResult result) {
+        
+        System.out.println("authenticateUser");
+        ErrorResponse errRes = new ErrorResponse(); // エラークラス
 
-//        リクエスト検証
-        if (loginRequest.getUserName().equals(BRANK) || loginRequest.getPassword().equals(BRANK)) {
-            AuthResponse res = new AuthResponse();
-            res.setJwtToken("リクエスト情報がブランクです");
-            System.out.println(res);
-            return ResponseEntity.badRequest().body(res);
+        // バリデーション検証
+        if (result.hasErrors()) {
+            List<String> errors = result.getFieldErrors().stream().map(error -> 
+                error.getField() + ": " + error.getDefaultMessage()).collect(Collectors.toList());
+            
+            System.out.println("errors: " + errors);
+            errRes.setMessages(errors);
+            
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errRes);
         }
 
         // 1. Spring Securityの認証プロセスを実行
@@ -71,11 +81,16 @@ public class TodoController {
                     new UsernamePasswordAuthenticationToken(loginRequest.getUserName(), loginRequest.getPassword()));
             System.out.print(authentication);
         } catch (BadCredentialsException e) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "ユーザー名またはパスワードが間違っています");
+            errRes.addMessage("ユーザー名またはパスワードが間違っています");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errRes);
         } catch (UsernameNotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "ユーザーが存在しません");
+            errRes.addMessage("ユーザーが存在しません");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errRes);
+
         } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "認証中にエラーが発生しました");
+            errRes.addMessage("認証中にエラーが発生しました");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errRes);
+            
         }
 
         // 2. 認証に成功したら、ユーザーの詳細をロード
@@ -86,7 +101,9 @@ public class TodoController {
             System.out.println(token);
 
         } else {
-            throw new RuntimeException("ログイン失敗");
+            errRes.addMessage("ログイン失敗しました");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errRes);
+
         }
 
         AuthResponse res = new AuthResponse();
@@ -102,7 +119,7 @@ public class TodoController {
     }
 
     // Todoリスト取得API（未完了）
-    @PreAuthorize("hasRole('USER')") 
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("/getTodoList")
     public ResponseEntity<GetTodoListResponse> getTodoList() throws Exception {
         GetTodoListResponse res = new GetTodoListResponse();
@@ -121,7 +138,7 @@ public class TodoController {
     }
 
     // Todoリスト取得API（未完了）
-    @PreAuthorize("hasRole('USER')") 
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("/getTodoListComp")
     public ResponseEntity<GetTodoListResponse> getTodoListComp() throws Exception {
         GetTodoListResponse res = new GetTodoListResponse();
@@ -140,7 +157,7 @@ public class TodoController {
     }
 
     // Todoリスト登録API
-    @PreAuthorize("hasRole('USER')") 
+    @PreAuthorize("hasRole('USER')")
     @PostMapping("/addTodo")
     public void addTodo(@RequestBody TodoRequest todoReq) {
 
@@ -151,23 +168,23 @@ public class TodoController {
     }
 
     // Todoリスト更新API
-    @PreAuthorize("hasRole('USER')") 
+    @PreAuthorize("hasRole('USER')")
     @PostMapping("/updateTodo")
     public void updateTodo(@RequestBody TodoRequest reqTodo) {
         // todo更新
         todoService.updateTodo(reqTodo.getTodo());
 
     }
-    
-    @PreAuthorize("hasRole('USER')") 
+
+    @PreAuthorize("hasRole('USER')")
     @PostMapping("/sendCompleteList")
     public void sendCompleteList(@RequestBody TodoRequest reqTodo) {
         // 完了日更新
-        todoService.completeTodoList(reqTodo.getOperation(),reqTodo.getTodoIdList());
+        todoService.completeTodoList(reqTodo.getOperation(), reqTodo.getTodoIdList());
 
     }
 
-    @PreAuthorize("hasRole('USER')") 
+    @PreAuthorize("hasRole('USER')")
     @PostMapping("/updateCompleteAt")
     public GetTodoListResponse updateCompleteAt(@RequestBody TodoRequest reqTodo) {
 
@@ -178,7 +195,7 @@ public class TodoController {
     }
 
     // Todoリスト削除API
-    @PreAuthorize("hasRole('USER')") 
+    @PreAuthorize("hasRole('USER')")
     @PostMapping("/deleteTodo")
     public GetTodoListResponse deleteTodo(@RequestBody TodoRequest reqTodo) {
 

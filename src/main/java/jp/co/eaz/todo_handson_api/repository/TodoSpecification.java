@@ -38,16 +38,4 @@ public class TodoSpecification {
             return builder.isNull(root.get("compleateAt"));
         };
     };
-
-    
-    /**
-     * 条件：完了日の入力がない
-     * @return Specification<TodoEntity>
-     */
-//    public static Specification<TodoEntity> isNotCompleteAt() {
-//        return (root, query, builder) -> {
-//            return builder.isNull(root.get("compleateAt"));
-//        };
-//    };
-
 }
